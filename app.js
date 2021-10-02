@@ -13,8 +13,18 @@ const port = 3000
 const path = require("path")
 const mysql = require("mysql")
 const cookieParser = require("cookie-parser")
+const session = require("express-session")
+
+const sessionInfo = {
+    secret: "nodePractice",
+    cookie: { maxAge: 300000},
+    resave: false,
+    saveUninitialized: false
+}
 
 app.use(cookieParser())
+// sessionが使えるように
+app.use(session(sessionInfo))
 
 const db = mysql.createConnection({
     host: process.env.LOCAL_DB_HOST,
@@ -27,6 +37,37 @@ const db = mysql.createConnection({
 db.connect((err) => {
     if (err) throw err
     console.log("mysql に接続できました")
+})
+
+app.get("/login", (req, res) => {
+    res.sendFile(__dirname + "/views/login.html")
+})
+
+app.post("/login", (req, res) => {
+    const user = req.body.user
+    const password = req.body.password
+    if(user === 'node' && password === "password"){
+        req.session.regenerate((err) => {
+            req.session.user = "node"
+            res.redirect("/")
+        })
+    } else {
+        res.redirect("/login")
+    }
+})
+
+app.get("/logout", (req, res) => {
+    req.session.destroy((err) => {
+        res.redirect("/")
+    })
+})
+
+app.use((req, res, next) => {
+    if(req.session.user) {
+        next()
+    } else {
+        res.redirect("/login")
+    }
 })
 
 app.get("/", (req, res) => {
