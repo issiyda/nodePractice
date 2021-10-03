@@ -15,6 +15,9 @@ const mysql = require("mysql")
 const cookieParser = require("cookie-parser")
 const session = require("express-session")
 
+// sequelizeのモジュール
+const sequelize = require("./db/db-config")
+
 const sessionInfo = {
     secret: "nodePractice",
     cookie: { maxAge: 300000},
@@ -39,6 +42,7 @@ db.connect((err) => {
     console.log("mysql に接続できました")
 })
 
+
 app.get("/login", (req, res) => {
     res.sendFile(__dirname + "/views/login.html")
 })
@@ -62,13 +66,13 @@ app.get("/logout", (req, res) => {
     })
 })
 
-app.use((req, res, next) => {
-    if(req.session.user) {
-        next()
-    } else {
-        res.redirect("/login")
-    }
-})
+// app.use((req, res, next) => {
+//     if(req.session.user) {
+//         next()
+//     } else {
+//         res.redirect("/login")
+//     }
+// })
 
 app.get("/", (req, res) => {
     res.send("Hello World!!")
@@ -149,6 +153,20 @@ app.post("/cookie", (req, res) => {
         answer = ""
     }
     res.cookie("answer", answer).redirect("/cookie")
+})
+
+//=========================
+// sequelize編
+//=========================
+
+app.get("/sequelize", async (req, res) => {
+    try {
+        await sequelize.authenticate();
+        console.log("connection OK")
+        res.send("connection OK")
+    } catch (error) {
+        console.log("Unable to connect", error)
+    }
 })
 
 
