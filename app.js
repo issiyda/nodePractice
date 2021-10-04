@@ -15,8 +15,13 @@ const mysql = require("mysql")
 const cookieParser = require("cookie-parser")
 const session = require("express-session")
 
-// sequelizeのモジュール
+// sequelize
 const sequelize = require("./db/db-config")
+const User = require("./models/user")
+
+
+//　定数
+const { USER_TYPE } = require("./utils/constants")
 
 const sessionInfo = {
     secret: "nodePractice",
@@ -86,13 +91,18 @@ app.get("/users", (req, res) => {
     })
 })
 
-app.get("/usersList", (req, res) => {
-    const sql = "SELECT * FROM users"
-    db.query(sql, function( err, result) {
-        if (err) throw err
-        console.log(res.users)
-        res.render("index",{users : result})
-    })
+// app.get("/usersList", (req, res) => {
+    // const sql = "SELECT * FROM users"
+//     db.query(sql, function( err, result) {
+//         if (err) throw err
+//         res.render("index",{users : result})
+//     })
+// })
+
+// sequelizeのReadで書き換え
+app.get("/usersList",  async (req, res) => {
+    const users = await User.findAll()
+    res.render("index",{users: users})
 })
 
 // ユーザ作成フォーム表示
@@ -100,14 +110,25 @@ app.get("/create", (req, res) => {
     res.sendFile(path.join(__dirname, "views/form.html"))
 })
 
+// // ユーザ作成
+// app.post("/create", (req, res) => {
+//     const sql = "INSERT INTO users SET ?"
+//     db.query(sql, req.body, function (err, result) {
+//         if (err) throw err;
+//         res.send("登録完了")
+//     })
+// })
+
 // ユーザ作成
-app.post("/create", (req, res) => {
-    const sql = "INSERT INTO users SET ?"
-    db.query(sql, req.body, function (err, result) {
-        if (err) throw err;
-        console.log(result)
-        res.send("登録完了")
+app.post("/create", async (req, res) => {
+    const params = req.body
+    await User.create({
+        type: USER_TYPE.USER,
+        name: params.name,
+        email: params.email,
+        password: params.password,
     })
+    res. redirect('usersList')
 })
 
 // ユーザ更新フォーム表示
@@ -120,12 +141,24 @@ app.get("/edit/:id", (req, res) => {
 })
 
 // ユーザ更新
-app.post("/edit/:id", (req, res) => {
-    const sql = "update users set ? where id = " + req.params.id
-    db.query(sql, req.body, function (err, result) {
-        if (err) throw err;
-        res.redirect("/usersList")
+// app.post("/edit/:id", (req, res) => {
+//     const sql = "update users set ? where id = " + req.params.id
+//     db.query(sql, req.body, function (err, result) {
+//         if (err) throw err;
+//         res.redirect("/usersList")
+//     })
+// })
+
+app.post("/edit/:id", async (req, res) => {
+    const params = req.body
+    await User.update({
+        name: params.name,
+        email: params.email,
+        password: params.password,
+    }, {
+        where: { id: req.params.id}
     })
+    res.redirect('/usersList')
 })
 
 // ユーザ削除
@@ -135,6 +168,14 @@ app.get("/delete/:id", (req, res) => {
         if (err) throw err
         res.redirect("/usersList")
     })
+})
+
+// sequelizeでDelete
+app.get("/delete/:id", async (req, res) => {
+    await User.destroy({
+        where: { id: req.params.id}
+    })
+    res.redirect("/usersList")
 })
 
 app.get("/cookie", (req, res) => {
@@ -154,21 +195,6 @@ app.post("/cookie", (req, res) => {
     }
     res.cookie("answer", answer).redirect("/cookie")
 })
-
-//=========================
-// sequelize編
-//=========================
-
-app.get("/sequelize", async (req, res) => {
-    try {
-        await sequelize.authenticate();
-        console.log("connection OK")
-        res.send("connection OK")
-    } catch (error) {
-        console.log("Unable to connect", error)
-    }
-})
-
 
 
 app.listen(port, () => console.log(`listen!! ${port}`))
