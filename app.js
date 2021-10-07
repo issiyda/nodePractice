@@ -15,6 +15,8 @@ const mysql = require("mysql")
 const cookieParser = require("cookie-parser")
 const session = require("express-session")
 
+const loginCheck = require("./middleware/loginCheck")
+
 // sequelize
 const sequelize = require("./db/db-config")
 const User = require("./models/user")
@@ -48,6 +50,16 @@ db.connect((err) => {
 })
 
 app.use("/", require("./routing/root"))
+app.use("/home", (req, res) => {
+    res.render("home", { name: req.session.login, isLogin: req.session.login ? true : false })
+})
+
+app.use("/blog", loginCheck, (req, res) => {
+    res.render("blog", { name: req.session.login, isLogin: req.session.login ? true : false })
+})
+
+//　認証系のrouting
+app.use("/auth", require("./routing/auth"))
 
 
 app.listen(port, () => console.log(`listen!! ${port}`))
